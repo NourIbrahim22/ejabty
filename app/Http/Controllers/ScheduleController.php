@@ -72,6 +72,11 @@ public function getSchedule(Request $request)
 {
     $type = $request->query('type'); // optional filter
 
+    if ($type && !in_array($type, ['exam', 'course'])) {
+    return response()->json([
+        'error' => 'Invalid type. Use exam or course only.'
+    ], 400);
+
     $query = Schedule::with('course');
 
     if ($type) {
@@ -85,9 +90,12 @@ public function getSchedule(Request $request)
 
     return response()->json([
         'success' => true,
+        'selected_type'=>$type ?? 'all',
         'count' => $schedule->count(),
         'data' => $schedule
     ]);
+    
+}
 }
 
 }
