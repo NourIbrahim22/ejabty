@@ -81,3 +81,9 @@ Route::get('/assign-exam-halls', function(Request $request, HallAssignmentServic
 Route::get('/halls', function () {
     return view('halls');
 });
+
+Route::get('/schedule',function(){
+    return view('schedule_form');
+});
+
+Route::post('/schedule/generate',[ScheduleController::class,'generateAutomatic'])->name('schedules.generate');
