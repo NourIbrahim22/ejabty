@@ -19,6 +19,7 @@ Route::get('/', function () {
 
 use App\Services\HallAssignmentService;
 use App\Models\Student;
+use App\Http\Controllers\ScheduleController;
 
 
 Route::get('/assign-exam-halls', function(Request $request, HallAssignmentService $service) {
@@ -82,8 +83,6 @@ Route::get('/halls', function () {
     return view('halls');
 });
 
-Route::get('/schedule',function(){
-    return view('schedule_form');
-});
+Route::get('/schedule', [ScheduleController::class, 'getSchedule']);
 
 Route::post('/schedule/generate',[ScheduleController::class,'generateAutomatic'])->name('schedules.generate');

@@ -8,52 +8,86 @@ use App\Models\Schedule;
 
 class ScheduleController extends Controller
 {
-    public function generateAutomatic(Request $request) {
-        $request->validate([
-            'halls'=>'required|integer|min:1',
-            'type'=>'required|in:exam,course',
-        ]);
+    public function generateAutomatic(Request $request)
+{
+    $request->validate([
+        'halls' => 'required|integer|min:1',
+        'type' => 'required|in:exam,course',
+    ]);
 
-        $hallsCount = $request->halls;
-        $type = $request->type;
+    $hallsCount = $request->halls;
+    $type = $request->type;
 
-        $courses = Course::all();
+    $courses = Course::all();
 
-        $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday'];
-        $times = ['8:00','9:00','10:00','11:00','12:00','13:00','14:00','15:00'];
+    if ($courses->isEmpty()) {
+        return response()->json(['error' => 'No courses found in the database'], 404);
+    }
 
-        $scheduleEntries = [];
-        $hallIndex = 0;
-        $timeIndex = 0;
-        $dayIndex = 0;
+    $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday'];
+    $times = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00'];
 
-        foreach($courses as $course) {
-            $scheduleEntries[] = [
-                'course_id'=>$course->id,
-                'hall_id'=>$hallIndex+1,
-                'day'=>$days[$dayIndex],
-                'time'=>$times[$timeIndex],
-                'type'=>$type,
-                'created_at'=>now(),
-                'updated_at'=>now()
-            ];
+    $scheduleEntries = [];
+    $hallIndex = 0;
+    $timeIndex = 0;
+    $dayIndex = 0;
 
-            $hallIndex++;
-            if($hallIndex>=$hallsCount) {
-                $hallIndex = 0;
-                $timeIndex++;
-                if($timeIndex>=count($times)) {
-                    $timeIndex = 0;
-                    $dayIndex++;
-                    if($dayIndex>=count($days)) {
-                        return back()->with('error','Not enough slots for all courses');
-                    }
+    foreach ($courses as $course) {
+        $scheduleEntries[] = [
+            'course_id' => $course->id,
+            'hall_id' => $hallIndex + 1,
+            'day' => $days[$dayIndex],
+            'time' => $times[$timeIndex],
+            'type' => $type,
+            'created_at' => now(),
+            'updated_at' => now()
+        ];
+
+        $hallIndex++;
+        if ($hallIndex >= $hallsCount) {
+            $hallIndex = 0;
+            $timeIndex++;
+            if ($timeIndex >= count($times)) {
+                $timeIndex = 0;
+                $dayIndex++;
+                if ($dayIndex >= count($days)) {
+                    return response()->json(['error' => 'Not enough slots for all courses'], 400);
                 }
-
             }
         }
-        Schedule::insert($scheduleEntries);
-        return back()->with('Schedule Generated');
     }
+
+    // Insert into database
+    Schedule::insert($scheduleEntries);
+
+    // Return the generated schedule in JSON so Postman sees it
+    return response()->json([
+        'success' => true,
+        'message' => 'Schedule generated successfully!',
+        'schedule' => $scheduleEntries
+    ]); 
+}
+
+public function getSchedule(Request $request)
+{
+    $type = $request->query('type'); // optional filter
+
+    $query = Schedule::with('course');
+
+    if ($type) {
+        $query->where('type', $type);
+    }
+
+    $schedule = $query->orderBy('day')
+                      ->orderBy('time')
+                      ->orderBy('hall_id')
+                      ->get();
+
+    return response()->json([
+        'success' => true,
+        'count' => $schedule->count(),
+        'data' => $schedule
+    ]);
+}
 
 }

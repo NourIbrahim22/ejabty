@@ -15,4 +15,8 @@ class Schedule extends Model
         'day',
         'time'
     ];
+    public function course()
+{
+    return $this->belongsTo(Course::class);
+}
 }
